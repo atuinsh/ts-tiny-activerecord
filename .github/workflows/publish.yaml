@@ -1,14 +1,20 @@
-name: Test
+name: Publish to npm
 
 on:
+  release:
+    types: [published]
   push:
-    branches: [ main ]
-  pull_request:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  test:
+  publish:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
@@ -16,6 +22,7 @@ jobs:
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
 
     - name: Install pnpm
       uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
@@ -39,8 +46,14 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Create temp directory
-      run: mkdir -p /tmp
+    - name: Update npm to latest
+      run: npm install -g npm@latest
+
+    - name: Build package
+      run: pnpm build
 
     - name: Run tests
       run: pnpm test
+
+    - name: Publish to npm
+      run: npm publish

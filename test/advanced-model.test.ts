@@ -1,3 +1,5 @@
+import { describe, it, before, after, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
 import { Model, Persistence, ValueEncoder } from "../src";
 import { createSqliteAdapter } from "./sqlite-adapter";
 import { unlink } from 'fs/promises';
@@ -62,7 +64,7 @@ class ComplexModel extends Model<ComplexAttrs> {}
 describe("Advanced Model Features", () => {
   const dbPath = "/tmp/test_db2.db";
 
-  beforeAll(async () => {
+  before(async () => {
     const adapter = createSqliteAdapter({
       dbName: "test_db2",
       tableName: "complex_models",
@@ -74,7 +76,7 @@ describe("Advanced Model Features", () => {
     );
   });
 
-  afterAll(async () => {
+  after(async () => {
     if (existsSync(dbPath)) {
       await unlink(dbPath);
     }
@@ -99,8 +101,8 @@ describe("Advanced Model Features", () => {
     await model.save();
     const loaded = await ComplexModel.get(model.get("id"));
 
-    expect(loaded?.get("secretKey")).toBeUndefined();
-    expect(loaded?.get("name")).toBe("Test Model");
+    assert.equal(loaded?.get("secretKey"), undefined);
+    assert.equal(loaded?.get("name"), "Test Model");
   });
 
   it("should encode and decode JSON fields", async () => {
@@ -116,7 +118,7 @@ describe("Advanced Model Features", () => {
     await model.save();
     const loaded = await ComplexModel.get(model.get("id"));
 
-    expect(loaded?.get("metadata")).toEqual(metadata);
+    assert.deepEqual(loaded?.get("metadata"), metadata);
   });
 
   it("should encode and decode Date fields", async () => {
@@ -132,8 +134,8 @@ describe("Advanced Model Features", () => {
     await model.save();
     const loaded = await ComplexModel.get(model.get("id"));
 
-    expect(loaded?.get("lastUpdated")).toBeInstanceOf(Date);
-    expect(loaded?.get("lastUpdated").getTime()).toBe(date.getTime());
+    assert.ok(loaded?.get("lastUpdated") instanceof Date);
+    assert.equal(loaded?.get("lastUpdated").getTime(), date.getTime());
   });
 
   it("should call lifecycle hooks", async () => {
@@ -146,19 +148,19 @@ describe("Advanced Model Features", () => {
     });
 
     await model.save();
-    expect(preSaveCalled).toBe("insert");
-    expect(postSaveCalled).toBe("insert");
-    expect(model.get("count")).toBe(2);
+    assert.equal(preSaveCalled, "insert");
+    assert.equal(postSaveCalled, "insert");
+    assert.equal(model.get("count"), 2);
     preSaveCalled = false;
     postSaveCalled = false;
 
     await model.save();
-    expect(preSaveCalled).toBe(false);
-    expect(postSaveCalled).toBe(false);
-    expect(model.get("count")).toBe(2);
+    assert.equal(preSaveCalled, false);
+    assert.equal(postSaveCalled, false);
+    assert.equal(model.get("count"), 2);
 
     await ComplexModel.get(model.get("id"));
-    expect(postLoadCalled).toBe(true);
+    assert.equal(postLoadCalled, true);
   });
 
   it("should only encode changed fields on update", async () => {
@@ -181,10 +183,10 @@ describe("Advanced Model Features", () => {
     await model.save();
 
     const loaded = await ComplexModel.get(model.get("id"));
-    expect(loaded?.get("name")).toBe("Updated Name");
-    expect(loaded?.get("metadata")).toEqual({ initial: true });
-    expect(preSaveCalled).toBe("update");
-    expect(postSaveCalled).toBe("update");
+    assert.equal(loaded?.get("name"), "Updated Name");
+    assert.deepEqual(loaded?.get("metadata"), { initial: true });
+    assert.equal(preSaveCalled, "update");
+    assert.equal(postSaveCalled, "update");
   });
 
   it("should retrieve all models and handle encoders", async () => {
@@ -208,10 +210,10 @@ describe("Advanced Model Features", () => {
     }).save();
 
     const allModels = await ComplexModel.all();
-    expect(allModels.length).toBeGreaterThanOrEqual(2);
-    expect(allModels[0]?.get("metadata")).toBeInstanceOf(Object);
-    expect(allModels[0]?.get("lastUpdated")).toBeInstanceOf(Date);
-    expect(postLoadCalled).toBe(true);
+    assert.ok(allModels.length >= 2);
+    assert.ok(allModels[0]?.get("metadata") instanceof Object);
+    assert.ok(allModels[0]?.get("lastUpdated") instanceof Date);
+    assert.equal(postLoadCalled, true);
   });
 
   it("should retrieve models by criteria with encoded fields", async () => {
@@ -225,10 +227,10 @@ describe("Advanced Model Features", () => {
     }).save();
 
     const foundModel = await ComplexModel.getBy({ name: "Search Test" });
-    expect(foundModel).not.toBeNull();
-    expect(foundModel?.get("metadata")?.searchKey).toBe("findMe");
-    expect(foundModel?.get("lastUpdated").getTime()).toBe(date.getTime());
-    expect(postLoadCalled).toBe(true);
+    assert.notEqual(foundModel, null);
+    assert.equal(foundModel?.get("metadata")?.searchKey, "findMe");
+    assert.equal(foundModel?.get("lastUpdated").getTime(), date.getTime());
+    assert.equal(postLoadCalled, true);
   });
 
   it("should delete a model and handle lifecycle hooks", async () => {
@@ -244,15 +246,15 @@ describe("Advanced Model Features", () => {
 
     // Verify model exists
     let loadedModel = await ComplexModel.get(id);
-    expect(loadedModel).not.toBeNull();
+    assert.notEqual(loadedModel, null);
 
     // Delete the model
     const success = await model.del();
-    expect(success).toBe(true);
+    assert.equal(success, true);
 
     // Verify model no longer exists
     loadedModel = await ComplexModel.get(id);
-    expect(loadedModel).toBeNull();
-    expect(postDeleteCalled).toBe(true);
+    assert.equal(loadedModel, null);
+    assert.equal(postDeleteCalled, true);
   });
 });

@@ -1,3 +1,5 @@
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
 import { Model, Persistence } from "../src";
 import { createSqliteAdapter } from "./sqlite-adapter";
 import { unlink } from 'fs/promises';
@@ -24,7 +26,7 @@ class Person extends Model<PersonAttrs> {
 describe('Model', () => {
   const dbPath = '/tmp/test_db.db';
 
-  beforeAll(async () => {
+  before(async () => {
     const adapter = createSqliteAdapter({
       dbName: "test_db",
       tableName: "people",
@@ -36,7 +38,7 @@ describe('Model', () => {
     );
   });
 
-  afterAll(async () => {
+  after(async () => {
     if (existsSync(dbPath)) {
       await unlink(dbPath);
     }
@@ -49,13 +51,13 @@ describe('Model', () => {
       age: 30
     });
 
-    expect(person.persisted).toBe(false);
-    expect(person.get("id")).toBeUndefined();
+    assert.equal(person.persisted, false);
+    assert.equal(person.get("id"), undefined);
 
     await person.save();
 
-    expect(person.persisted).toBe(true);
-    expect(person.get("id")).toBeDefined();
+    assert.equal(person.persisted, true);
+    assert.notEqual(person.get("id"), undefined);
   });
 
   it('should load a saved person', async () => {
@@ -67,11 +69,11 @@ describe('Model', () => {
     await person.save();
 
     const loadedPerson = await Person.get(person.get("id"));
-    expect(loadedPerson).not.toBeNull();
-    expect(loadedPerson?.get("firstName")).toBe("Jane");
-    expect(loadedPerson?.get("lastName")).toBe("Smith");
-    expect(loadedPerson?.get("age")).toBe(25);
-    expect(loadedPerson?.fullName()).toBe("Jane Smith");
+    assert.notEqual(loadedPerson, null);
+    assert.equal(loadedPerson?.get("firstName"), "Jane");
+    assert.equal(loadedPerson?.get("lastName"), "Smith");
+    assert.equal(loadedPerson?.get("age"), 25);
+    assert.equal(loadedPerson?.fullName(), "Jane Smith");
   });
 
   it('should track changed fields', async () => {
@@ -81,19 +83,19 @@ describe('Model', () => {
       age: 40
     });
 
-    expect(person.getChangedFields()).toEqual(["firstName", "lastName", "age"]);
+    assert.deepEqual(person.getChangedFields(), ["firstName", "lastName", "age"]);
     await person.save();
-    expect(person.getChangedFields()).toEqual([]);
+    assert.deepEqual(person.getChangedFields(), []);
 
     person.set("firstName", "Robert");
-    expect(person.getChangedFields()).toEqual(["firstName"]);
+    assert.deepEqual(person.getChangedFields(), ["firstName"]);
     await person.save();
-    expect(person.getChangedFields()).toEqual([]);
+    assert.deepEqual(person.getChangedFields(), []);
 
     const loadedPerson = await Person.get(person.get("id"));
-    expect(loadedPerson?.get("firstName")).toBe("Robert");
-    expect(loadedPerson?.get("lastName")).toBe("Wilson");
-    expect(loadedPerson?.get("age")).toBe(40);
+    assert.equal(loadedPerson?.get("firstName"), "Robert");
+    assert.equal(loadedPerson?.get("lastName"), "Wilson");
+    assert.equal(loadedPerson?.get("age"), 40);
   });
 
   it('should retrieve all people', async () => {
@@ -111,8 +113,8 @@ describe('Model', () => {
     }).save();
 
     const allPeople = await Person.all();
-    expect(allPeople.length).toBeGreaterThanOrEqual(2);
-    expect(allPeople[0]).toBeInstanceOf(Person);
+    assert.ok(allPeople.length >= 2);
+    assert.ok(allPeople[0] instanceof Person);
   });
 
   it('should retrieve people by criteria', async () => {
@@ -124,12 +126,12 @@ describe('Model', () => {
     }).save();
 
     const peopleAge45 = await Person.all({ age: 45 });
-    expect(peopleAge45.length).toBeGreaterThan(0);
-    expect(peopleAge45[0]?.get("age")).toBe(45);
+    assert.ok(peopleAge45.length > 0);
+    assert.equal(peopleAge45[0]?.get("age"), 45);
 
     const personByName = await Person.getBy({ firstName: "David" });
-    expect(personByName).not.toBeNull();
-    expect(personByName?.get("lastName")).toBe("Miller");
+    assert.notEqual(personByName, null);
+    assert.equal(personByName?.get("lastName"), "Miller");
   });
 
   it('should delete a person', async () => {
@@ -143,14 +145,14 @@ describe('Model', () => {
 
     // Verify person exists
     let loadedPerson = await Person.get(id);
-    expect(loadedPerson).not.toBeNull();
+    assert.notEqual(loadedPerson, null);
 
     // Delete the person
     const success = await person.del();
-    expect(success).toBe(true);
+    assert.equal(success, true);
 
     // Verify person no longer exists
     loadedPerson = await Person.get(id);
-    expect(loadedPerson).toBeNull();
+    assert.equal(loadedPerson, null);
   });
 });

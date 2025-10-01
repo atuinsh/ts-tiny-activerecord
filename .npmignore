@@ -1,0 +1,23 @@
+# Source files
+src/
+test/
+
+# Config files
+.github/
+.gitignore
+tsconfig.json
+pnpm-lock.yaml
+
+# Development files
+*.test.ts
+*.test.js
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.log
+.DS_Store
+node_modules/
+tmp/
